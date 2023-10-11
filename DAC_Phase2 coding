@@ -1,0 +1,45 @@
+# Import necessary libraries
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+
+# Load your dataset
+# Replace 'your_dataset.csv' with the actual filename
+data = pd.read_csv('your_dataset.csv')
+
+# Assuming you have features for clustering, excluding the 'ServiceDisruption' column
+X = data[['TripID', 'RouteID', 'StopID', 'Number of boardings']]
+
+# Define preprocessing steps for numeric and categorical features
+numeric_features = ['TripID', 'RouteID', 'StopID', 'Number of boardings']
+numeric_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='mean')),  # Handle missing values with mean imputation
+    ('scaler', StandardScaler())  # Standardize numeric features
+])
+
+categorical_features = []  # Add categorical features if any
+categorical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),  # Handle missing values with most frequent imputation
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))  # One-hot encode categorical features
+])
+
+# Combine preprocessing steps
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numeric_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
+
+# Create a pipeline with preprocessing and the K-means clustering algorithm
+pipeline = Pipeline(steps=[('preprocessor', preprocessor),
+                             ('kmeans', KMeans(n_clusters=2, random_state=42))])  # You can adjust the number of clusters
+
+# Fit the model and get cluster assignments
+data['Cluster'] = pipeline.fit_predict(X)
+
+# View the resulting clusters
+print(data[['TripID', 'RouteID', 'StopID', 'Number of boardings', 'Cluster']])
